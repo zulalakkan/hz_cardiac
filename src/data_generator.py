@@ -59,7 +59,7 @@ class DataGenerator(keras.utils.Sequence):
         images = np.array(images)
         masks  = np.array(masks)
 
-        return image, mask
+        return images, masks
 
     def on_epoch_end(self):
         pass

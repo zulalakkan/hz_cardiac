@@ -42,11 +42,12 @@ def upsample_concat_block(x, xskip):
 
 
 def ResUNet(image_size, num_classes):
-    f = [16, 32, 64, 128, 256]
-    inputs = keras.layers.Input((None, image_size, image_size, 1))
+    #f = [16, 32, 64, 128, 256]
+    f = [24, 48, 96, 192, 384]
+    inputs = keras.layers.Input((image_size, image_size, 1))
     
     ## Encoder
-    e0 = inputs
+    e0 = inputs # (192, 192, 1)
     e1 = stem(e0, f[0])
     e2 = residual_block(e1, f[1], strides=2)
     e3 = residual_block(e2, f[2], strides=2)
@@ -76,8 +77,13 @@ def ResUNet(image_size, num_classes):
     return model
 
 def dice_coef(y_true, y_pred):
+    print(y_pred.shape)
+    y_true = keras.utils.to_categorical(y_true, num_classes=4)
+    y_true = tf.compat.v1.constant(y_true, shape=[192, 192, 4])
     y_true_f = tf.compat.v1.layers.flatten(y_true)
+    print("gt: ", y_true_f.shape)
     y_pred_f = tf.compat.v1.layers.flatten(y_pred)
+    print("pred: ", y_pred_f.shape)
     intersection = tf.reduce_sum(y_true_f * y_pred_f)
     return (2. * intersection + SMOOTH) / (tf.reduce_sum(y_true_f) + tf.reduce_sum(y_pred_f) + SMOOTH)
 
@@ -87,6 +93,7 @@ def dice_coef_loss(y_true, y_pred):
 def build_ResUNet(image_size, num_classes):
     model = ResUNet(image_size, num_classes)
     adam = keras.optimizers.Adam()
-    model.compile(optimizer=adam, loss=dice_coef_loss, metrics=[dice_coef])
+    loss_function = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    model.compile(optimizer=adam, loss=loss_function, metrics=['accuracy'])
     model.summary()
     return model
